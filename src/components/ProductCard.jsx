@@ -7,7 +7,8 @@ import { Heart, MapPin, Sparkles, Star } from "lucide-react";
 export default function ProductCard({
   id = "macbook-pro-16",
   title = "Kuchli flagman noutbuk 16 dyuym, 32GB RAM / 1TB SSD",
-  priceFormatted = "58 400 000 so'm",
+  price = null,
+  priceFormatted = null,
   location = "Toshkent, Yunusobod",
   date = "Bugun, 14:10",
   badge = null,
@@ -17,6 +18,7 @@ export default function ProductCard({
   href = null,
 }) {
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
+  const [imgSrc, setImgSrc] = useState(image);
 
   const toggleFavorite = (e) => {
     e.preventDefault();
@@ -24,48 +26,55 @@ export default function ProductCard({
     setIsFavorite(!isFavorite);
   };
 
-  const targetHref = href || (id === "macbook-pro-16" || id === "macbook-pro-14-m3" ? "/product/macbook-pro-16" : `/product/macbook-pro-16`);
+  // Format price realistically with spaces if a number is passed
+  const displayPrice = priceFormatted
+    ? priceFormatted
+    : price
+    ? `${Number(price).toLocaleString("ru-RU").replace(/,/g, " ")} so'm`
+    : "Kelishiladi";
+
+  const targetHref = href || `/product/macbook-pro-16`;
 
   return (
     <Link
       href={targetHref}
-      className="group bg-white rounded-2xl border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden"
+      className="group bg-white rounded-2xl border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden relative"
     >
-      {/* Image container */}
+      {/* Image container with strict aspect ratio and object-cover to prevent distortion */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
         <img
-          src={image}
+          src={imgSrc}
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
+          onError={() =>
+            setImgSrc(
+              "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80"
+            )
+          }
         />
 
         {/* Top Badges */}
         <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
           {badge === "VIP" && (
-            <span className="flex items-center gap-1 bg-[#ffce32] text-[#002f34] text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-sm">
+            <span className="flex items-center gap-1 bg-[#ffce32] text-[#002f34] text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-xs">
               <Star className="w-2.5 h-2.5 fill-current" />
               VIP
             </span>
           )}
           {badge === "YANGI" && (
-            <span className="flex items-center gap-1 bg-[#23e5db] text-[#002f34] text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-sm">
+            <span className="flex items-center gap-1 bg-[#23e5db] text-[#002f34] text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-xs">
               <Sparkles className="w-2.5 h-2.5" />
               YANGI
             </span>
           )}
           {badge === "TOP" && (
-            <span className="bg-[#ffce32] text-[#002f34] text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-sm">
+            <span className="bg-[#ffce32] text-[#002f34] text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-xs">
               TOP
             </span>
           )}
-          {badge === "XIZMATLAR" && (
-            <span className="bg-gray-800 text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded-md shadow-sm">
-              XIZMATLAR
-            </span>
-          )}
           {badge === "KAFOLATLI" && (
-            <span className="bg-[#23e5db] text-[#002f34] text-[10px] font-bold uppercase px-2 py-0.5 rounded-md shadow-sm">
+            <span className="bg-[#23e5db] text-[#002f34] text-[10px] font-bold uppercase px-2 py-0.5 rounded-md shadow-xs">
               KAFOLATLI
             </span>
           )}
@@ -92,7 +101,7 @@ export default function ProductCard({
         <div>
           {/* Price */}
           <div className="text-base sm:text-lg font-bold text-[#002f34] leading-snug">
-            {priceFormatted}
+            {displayPrice}
           </div>
 
           {/* Title */}

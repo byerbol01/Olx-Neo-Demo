@@ -25,6 +25,7 @@ import {
   Compass,
   ArrowRight,
   X,
+  Navigation,
 } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import SafeDealBanner from "@/components/SafeDealBanner";
@@ -40,12 +41,12 @@ export default function ProductDetailPage() {
   const product = CURRENT_PRODUCT;
 
   const handleShare = () => {
-    if (navigator.share) {
+    if (navigator?.share) {
       navigator.share({
         title: product.title,
         url: window.location.href,
       });
-    } else {
+    } else if (navigator?.clipboard) {
       navigator.clipboard.writeText(window.location.href);
       alert("Havola nusxalandi!");
     }
@@ -69,7 +70,7 @@ export default function ProductDetailPage() {
           </Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="font-semibold text-[#002f34] truncate max-w-[200px] sm:max-w-none">
-            Noutbuk Pro 16
+            {product.title}
           </span>
         </nav>
 
@@ -89,7 +90,7 @@ export default function ProductDetailPage() {
 
       {/* 2. Main 2-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* ================= LEFT COLUMN (Gallery + Specs + Desc + Similar) ================= */}
+        {/* ================= LEFT COLUMN (Gallery + Specs + Desc + Map + Similar) ================= */}
         <div className="lg:col-span-8 space-y-6">
           {/* A. Gallery */}
           <div className="bg-white rounded-3xl border border-gray-200/80 p-4 sm:p-5 shadow-sm space-y-3">
@@ -302,7 +303,57 @@ export default function ProductDetailPage() {
           {/* E. Safe deal banner */}
           <SafeDealBanner />
 
-          {/* F. Similar Offers */}
+          {/* F. Location on Map Block */}
+          <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-7 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#002f34]" />
+                <h2 className="text-base font-black text-[#002f34]">
+                  Xaritada joylashuvi
+                </h2>
+              </div>
+              <span className="text-xs text-teal-700 font-bold hover:underline cursor-pointer flex items-center gap-1">
+                <Navigation className="w-3 h-3" />
+                <span>Yo&apos;nalishni ko&apos;rish</span>
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div>
+                  <strong className="text-gray-800 text-sm block">
+                    {product.location.district}
+                  </strong>
+                  <span className="text-gray-500">{product.location.city} • {product.location.metro}</span>
+                </div>
+                <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full text-xs font-semibold w-fit">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  {product.location.courier}
+                </span>
+              </div>
+
+              {/* Stylized Map View Box */}
+              <div className="relative h-48 w-full rounded-2xl overflow-hidden bg-slate-100 border border-gray-200 flex items-center justify-center">
+                <div
+                  className="absolute inset-0 opacity-40 bg-cover bg-center"
+                  style={{
+                    backgroundImage: "url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1000&q=80')",
+                  }}
+                ></div>
+                <div className="relative z-10 flex flex-col items-center gap-2 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-gray-200 max-w-sm text-center">
+                  <div className="w-10 h-10 rounded-full bg-[#002f34] text-[#23e5db] flex items-center justify-center shadow-md animate-bounce">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#002f34]">Yunusobod 11-mavze</h4>
+                    <p className="text-[11px] text-gray-500">Megaplanet savdo majmuasi yaqinida</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* G. Similar Offers */}
           <div className="space-y-4 pt-2">
             <div className="flex items-end justify-between">
               <div>
@@ -348,7 +399,7 @@ export default function ProductDetailPage() {
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                 NARXI
               </span>
-              <span className="bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-md">
+              <span className="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-0.5 rounded-md">
                 Narx kelishiladi
               </span>
             </div>
@@ -368,7 +419,7 @@ export default function ProductDetailPage() {
               {/* Call button */}
               <button
                 onClick={() => setShowPhone(!showPhone)}
-                className="w-full flex items-center justify-center gap-2 bg-[#ffce32] hover:bg-[#f3c220] active:scale-95 text-[#002f34] font-bold text-sm sm:text-base py-3.5 rounded-2xl shadow-sm transition-all"
+                className="w-full flex items-center justify-center gap-2 bg-[#ffce32] hover:bg-[#f3c220] active:scale-95 text-[#002f34] font-black text-sm sm:text-base py-3.5 rounded-2xl shadow-sm transition-all"
               >
                 <Phone className="w-5 h-5 stroke-[2.5]" />
                 <span>
@@ -379,7 +430,7 @@ export default function ProductDetailPage() {
               {/* Message button */}
               <button
                 onClick={() => router.push("/messages")}
-                className="w-full flex items-center justify-center gap-2 bg-[#23e5db] hover:bg-[#1cd1c7] active:scale-95 text-[#002f34] font-bold text-sm sm:text-base py-3.5 rounded-2xl shadow-sm transition-all"
+                className="w-full flex items-center justify-center gap-2 bg-[#23e5db] hover:bg-[#1cd1c7] active:scale-95 text-[#002f34] font-black text-sm sm:text-base py-3.5 rounded-2xl shadow-sm transition-all"
               >
                 <MessageSquare className="w-5 h-5 stroke-[2.5]" />
                 <span>Xabar yozish</span>
@@ -411,7 +462,7 @@ export default function ProductDetailPage() {
           <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-sm space-y-4">
             <div className="flex items-center gap-3.5">
               <div className="relative">
-                <div className="w-13 h-13 rounded-2xl bg-[#002f34] text-white flex items-center justify-center text-lg font-black w-12 h-12">
+                <div className="w-12 h-12 rounded-2xl bg-[#002f34] text-white flex items-center justify-center text-lg font-black shrink-0">
                   {product.seller.avatar}
                 </div>
                 {product.seller.isOnline && (
@@ -424,7 +475,7 @@ export default function ProductDetailPage() {
                   <h3 className="text-base font-black text-[#002f34]">
                     {product.seller.name}
                   </h3>
-                  <CheckCircle className="w-4 h-4 text-[#23e5db] fill-[#002f34]" />
+                  <CheckCircle className="w-4 h-4 text-[#23e5db]" />
                 </div>
                 <div className="text-[11px] text-gray-400">
                   {product.seller.since}
@@ -445,11 +496,11 @@ export default function ProductDetailPage() {
             {/* Stats list */}
             <div className="space-y-2 text-xs text-gray-600">
               <div className="flex items-center gap-2">
-                <span className="text-gray-400">👍</span>
+                <span>🤝</span>
                 <span>{product.seller.deals}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-gray-400">⚡</span>
+                <span>⚡</span>
                 <span>{product.seller.responseTime}</span>
               </div>
             </div>
@@ -463,78 +514,34 @@ export default function ProductDetailPage() {
             </button>
           </div>
 
-          {/* 3. Location Card */}
-          <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-sm space-y-3.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                JOYLASHUV
-              </span>
-              <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[#002f34]">
-                <MapPin className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-black text-[#002f34]">
-                {product.location.city}
-              </h4>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {product.location.district}
-              </p>
-            </div>
-
-            {/* Map preview */}
-            <div className="relative rounded-2xl overflow-hidden aspect-[16/9] bg-gray-100 border border-gray-200">
-              <img
-                src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=600&q=80"
-                alt="Map preview"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-[#002f34]/20 flex items-center justify-center">
-                <button
-                  onClick={() => alert("Xarita ochilmoqda...")}
-                  className="px-3.5 py-1.5 rounded-full bg-white text-[#002f34] font-bold text-xs shadow-md flex items-center gap-1.5 hover:bg-gray-50 transition-colors"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-[#23e5db]" />
-                  <span>Xaritada ko&apos;rish</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Metro & Courier note */}
-            <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1">
-              <span>🚇 {product.location.metro}</span>
-              <span>🚚 {product.location.courier}</span>
-            </div>
-          </div>
-
-          {/* 4. Safety Reminder Card */}
-          <div className="bg-[#f8fafc] rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#002f34]">
-              <Compass className="w-4 h-4 text-[#23e5db]" />
+          {/* 3. Safety Tips Card */}
+          <div className="bg-[#f8fafc] rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-2.5 text-xs text-gray-600">
+            <h4 className="font-bold text-[#002f34] flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-teal-600" />
               <span>Xavfsizlik eslatmasi</span>
-            </div>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Oldindan to&apos;lov qilmang. Karta ma&apos;lumotlari yoki SMS
-              orqali kelgan kodlarni hech kimga bermang.
-            </p>
+            </h4>
+            <ul className="space-y-1 text-[11px] list-disc list-inside text-gray-500">
+              <li>Hech qachon tovar ko&apos;rilmasdan oldindan pul o&apos;tkazmang.</li>
+              <li>OLX Xavfsiz bitim orqali to&apos;lang — pul kafolatda saqlanadi.</li>
+              <li>Begona chat yoki shubhali havolalarga o&apos;tmang.</li>
+            </ul>
           </div>
         </div>
       </div>
 
-      {/* Fullscreen Modal for image view */}
+      {/* Fullscreen Photo Modal */}
       {fullscreenModal && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <button
             onClick={() => setFullscreenModal(false)}
-            className="absolute top-4 right-4 text-white p-2 rounded-full bg-white/10 hover:bg-white/20"
+            className="absolute top-5 right-5 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
           <img
             src={product.images[selectedImageIndex]}
-            alt="Fullscreen"
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-xl"
+            alt={product.title}
+            className="max-h-[85vh] max-w-[90vw] object-contain rounded-2xl"
           />
         </div>
       )}

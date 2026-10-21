@@ -10,9 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
-import { VIP_PRODUCTS, LATEST_PRODUCTS } from "@/data/mockData";
 
 export default function FavoritesPage() {
   const [activeTab, setActiveTab] = useState("ads");
@@ -20,7 +20,7 @@ export default function FavoritesPage() {
   const [sortBy, setSortBy] = useState("latest");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
-  // Combine items to make 8 favorite items as shown in Figma
+  // 8 Exact items from reference design Screen 1
   const [favoriteItems, setFavoriteItems] = useState([
     {
       id: "iphone-15-pro-max",
@@ -131,11 +131,12 @@ export default function FavoritesPage() {
     if (selectedCategory === "electronics") return item.category === "Elektronika";
     if (selectedCategory === "transport") return item.category === "Transport";
     if (selectedCategory === "real-estate") return item.category === "Ko'chmas mulk";
+    if (selectedCategory === "home") return item.category === "Uy va bog'";
     return true;
   });
 
   return (
-    <div className="max-w-[1360px] mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+    <div className="max-w-[1360px] mx-auto px-4 sm:px-6 py-5 sm:py-7 space-y-6">
       {/* 1. Header & Price Drop Alert */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -151,7 +152,7 @@ export default function FavoritesPage() {
         </div>
 
         {/* Price dropped notification badge */}
-        <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-100 text-emerald-800 px-3.5 py-2 rounded-2xl text-xs font-semibold shrink-0">
+        <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3.5 py-2 rounded-2xl text-xs font-semibold shrink-0">
           <TrendingDown className="w-4 h-4 text-emerald-600" />
           <span>3 ta e&apos;londa narx pasaydi</span>
         </div>
@@ -245,6 +246,16 @@ export default function FavoritesPage() {
           >
             Ko&apos;chmas mulk (3)
           </button>
+          <button
+            onClick={() => setSelectedCategory("home")}
+            className={`px-3 py-1.5 rounded-full font-semibold transition-all ${
+              selectedCategory === "home"
+                ? "bg-[#002f34] text-white font-bold"
+                : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-100"
+            }`}
+          >
+            Uy va bog&apos; (3)
+          </button>
         </div>
 
         {/* Sort */}
@@ -262,7 +273,7 @@ export default function FavoritesPage() {
         </div>
       </div>
 
-      {/* 4. Favorites Grid */}
+      {/* 4. Favorites Grid (4 columns x 2 rows = 8 items) */}
       {filteredItems.length === 0 ? (
         <div className="bg-white rounded-3xl p-12 text-center space-y-3 border border-gray-100">
           <Heart className="w-12 h-12 text-gray-300 mx-auto" />
@@ -295,7 +306,7 @@ export default function FavoritesPage() {
       {/* 5. Pagination */}
       <div className="flex items-center justify-center gap-2 pt-6">
         <button
-          className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500"
+          className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 transition-colors"
           aria-label="Oldingi"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -303,11 +314,14 @@ export default function FavoritesPage() {
         <button className="w-8 h-8 rounded-full bg-[#002f34] text-white font-bold text-xs flex items-center justify-center shadow-sm">
           1
         </button>
-        <button className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs flex items-center justify-center">
+        <button className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs flex items-center justify-center transition-colors">
           2
         </button>
+        <button className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs flex items-center justify-center transition-colors">
+          3
+        </button>
         <button
-          className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500"
+          className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 transition-colors"
           aria-label="Keyingi"
         >
           <ChevronRight className="w-4 h-4" />

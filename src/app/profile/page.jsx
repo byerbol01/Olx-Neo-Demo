@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -25,24 +25,56 @@ import {
   Search,
   ExternalLink,
   ChevronLeft,
+  Camera,
+  Upload,
+  User,
+  Sparkles,
 } from "lucide-react";
 import { USER_PROFILE } from "@/data/mockData";
+import { useAuth } from "@/context/AuthContext";
+import AuthModal from "@/components/AuthModal";
 
 export default function ProfilePage() {
-  const profile = USER_PROFILE;
+  const { user, isLoggedIn, updateProfile, logout, completeLogin } = useAuth();
+  const fileInputRef = useRef(null);
+
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [balance, setBalance] = useState(profile.walletBalance);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  // If user is logged in via AuthContext, use dynamic info; fallback to USER_PROFILE
+  const displayName = user?.name || USER_PROFILE.name;
+  const displayPhone = user?.phone || USER_PROFILE.phone;
+  const displayAvatar = user?.avatar || USER_PROFILE.avatar;
+  const displayInitials = user?.avatarInitials || USER_PROFILE.avatarInitials;
+  const currentBalance = user?.walletBalance ?? USER_PROFILE.walletBalance;
 
   const handleTopUp = () => {
-    const amount = prompt("To'ldirish summasini kiriting (so'm):", "50000");
-    if (amount && !isNaN(amount)) {
-      setBalance((prev) => prev + Number(amount));
-      alert(`Hisobingiz ${Number(amount).toLocaleString()} so'mga to'ldirildi!`);
+    const amount = prompt("To'ldirish summasini kiriting (so'm):", "100000");
+    if (amount && !isNaN(amount) && Number(amount) > 0) {
+      const added = Number(amount);
+      const newBal = currentBalance + added;
+      updateProfile({ walletBalance: newBal });
+      alert(`Hisobingiz ${added.toLocaleString()} so'mga muvaffaqiyatli to'ldirildi!`);
     }
   };
 
-  const filteredAds = profile.ads.filter((ad) => {
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Rasm hajmi 5MB dan oshmasligi kerak!");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateProfile({ avatar: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const filteredAds = USER_PROFILE.ads.filter((ad) => {
     if (activeTab === "active" && ad.status !== "active") return false;
     if (activeTab === "pending" && ad.status !== "pending") return false;
     if (activeTab === "rejected" && ad.status !== "rejected") return false;
@@ -56,7 +88,7 @@ export default function ProfilePage() {
   });
 
   return (
-    <div className="max-w-[1360px] mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+    <div className="max-w-[1360px] mx-auto px-4 sm:px-6 py-5 sm:py-7 space-y-6">
       {/* 1. Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-gray-500">
         <Link href="/" className="hover:text-[#002f34] transition-colors">
@@ -73,21 +105,55 @@ export default function ProfilePage() {
         {/* ================= LEFT SIDEBAR ================= */}
         <aside className="lg:col-span-4 space-y-5">
           {/* A. User Profile Card */}
-          <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-sm text-center space-y-4">
-            <div className="relative inline-block">
-              <div className="w-20 h-20 rounded-full bg-[#002f34] text-white flex items-center justify-center text-2xl font-black mx-auto">
-                {profile.avatarInitials}
+          <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-sm text-center space-y-4 relative overflow-hidden">
+            <div className="relative inline-block group">
+              <div className="w-22 h-22 rounded-full overflow-hidden bg-[#002f34] text-white flex items-center justify-center text-2xl font-black mx-auto border-3 border-[#23e5db] shadow-md">
+                {displayAvatar ? (
+                  <img
+                    src={displayAvatar}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{displayInitials}</span>
+                )}
               </div>
-              <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white shadow-sm">
+
+              {/* Upload photo trigger */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 p-2 rounded-full bg-[#002f34] text-[#23e5db] hover:bg-black border-2 border-white shadow-md transition-all active:scale-90"
+                title="Fotosuratni yangilash"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+
+              <span className="absolute top-0 right-0 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white shadow-xs">
                 <ShieldCheck className="w-3.5 h-3.5" />
               </span>
             </div>
 
             <div>
               <h2 className="text-xl font-black text-[#002f34]">
-                {profile.name}
+                {displayName}
               </h2>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-semibold mt-1">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[11px] font-bold text-teal-700 hover:underline block mx-auto mt-0.5"
+              >
+                Fotosuratni o&apos;zgartirish
+              </button>
+
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-semibold mt-2">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#008f87]" />
                 <span>OneID orqali tasdiqlangan</span>
               </div>
@@ -96,20 +162,20 @@ export default function ProfilePage() {
             {/* Rating */}
             <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#002f34]">
               <Star className="w-4 h-4 fill-[#ffce32] text-[#ffce32]" />
-              <span>{profile.rating.toFixed(1)}</span>
+              <span>{USER_PROFILE.rating.toFixed(1)}</span>
               <span className="text-gray-400 font-normal">
-                ({profile.reviewsCount} ta baho)
+                ({USER_PROFILE.reviewsCount} ta baho)
               </span>
             </div>
 
             {/* Phone button */}
-            <button className="w-full py-2.5 rounded-2xl bg-[#f2f4f5] hover:bg-gray-200 text-xs font-bold text-[#002f34] flex items-center justify-center gap-2 transition-colors">
-              <Phone className="w-3.5 h-3.5 text-[#23e5db]" />
-              <span>{profile.phone}</span>
-            </button>
+            <div className="w-full py-2.5 rounded-2xl bg-[#f2f4f5] text-xs font-bold text-[#002f34] flex items-center justify-center gap-2">
+              <Phone className="w-3.5 h-3.5 text-teal-600" />
+              <span>{displayPhone}</span>
+            </div>
           </div>
 
-          {/* B. Wallet Balance Card */}
+          {/* B. Wallet Balance Card (Exact styling from Screen 7) */}
           <div className="bg-[#002f34] text-white rounded-3xl p-5 sm:p-6 shadow-md space-y-3.5">
             <div className="flex items-center justify-between text-xs text-gray-300 font-bold uppercase tracking-wider">
               <span>HAMYON BALANSI</span>
@@ -117,7 +183,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              {balance.toLocaleString()} so&apos;m
+              {currentBalance.toLocaleString()} so&apos;m
             </div>
 
             <button
@@ -139,8 +205,8 @@ export default function ProfilePage() {
                 <LayoutGrid className="w-4 h-4 text-[#23e5db]" />
                 <span>Mening e&apos;lonlarim</span>
               </div>
-              <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
-                14
+              <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">
+                {USER_PROFILE.stats.activeAds}
               </span>
             </Link>
 
@@ -165,7 +231,7 @@ export default function ProfilePage() {
                 <Heart className="w-4 h-4 text-gray-400" />
                 <span>Sevimlilar</span>
               </div>
-              <span className="text-xs text-gray-400">12</span>
+              <span className="text-xs text-gray-400 font-bold">12</span>
             </Link>
 
             <a
@@ -186,10 +252,10 @@ export default function ProfilePage() {
 
             <div className="pt-2 border-t border-gray-100 mt-2">
               <button
+                type="button"
                 onClick={() => {
-                  if (confirm("Haqiqatan ham chiqmoqchimisiz?")) {
-                    alert("Tizimdan muvaffaqiyatli chiqildi");
-                  }
+                  logout();
+                  alert("Tizimdan muvaffaqiyatli chiqildi");
                 }}
                 className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-red-600 hover:bg-red-50 transition-colors text-left font-bold"
               >
@@ -215,23 +281,23 @@ export default function ProfilePage() {
 
             <Link
               href="/create"
-              className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#ffce32] hover:bg-[#f3c220] active:scale-95 text-[#002f34] font-bold text-xs sm:text-sm shadow-sm transition-all shrink-0"
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#ffce32] hover:bg-[#f3c220] active:scale-95 text-[#002f34] font-black text-xs sm:text-sm shadow-sm transition-all shrink-0"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span>Yangi e&apos;lon</span>
             </Link>
           </div>
 
-          {/* 4 Stats Cards */}
+          {/* 4 Stats Cards (Exact metrics from Screen 7) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            {/* 1. Active */}
+            {/* 1. Active Ads */}
             <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-sm flex items-start justify-between">
               <div>
                 <span className="text-[11px] text-gray-500 font-medium block">
                   Faol e&apos;lonlar
                 </span>
                 <span className="text-2xl font-black text-[#002f34] block mt-1">
-                  {profile.stats.activeAds}
+                  {USER_PROFILE.stats.activeAds}
                 </span>
                 <span className="text-[10px] text-gray-400">ta e&apos;lon</span>
               </div>
@@ -240,7 +306,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* 2. Views */}
+            {/* 2. Views with Growth Badge */}
             <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-sm flex items-start justify-between">
               <div>
                 <span className="text-[11px] text-gray-500 font-medium block">
@@ -248,12 +314,13 @@ export default function ProfilePage() {
                 </span>
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className="text-2xl font-black text-[#002f34]">
-                    {profile.stats.views.toLocaleString()}
+                    {USER_PROFILE.stats.views.toLocaleString()}
                   </span>
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                    {profile.stats.viewsGrowth}
+                    {USER_PROFILE.stats.viewsGrowth}
                   </span>
                 </div>
+                <span className="text-[10px] text-gray-400 mt-0.5 block">Oxirgi 30 kun</span>
               </div>
               <div className="w-8 h-8 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center">
                 <Eye className="w-4 h-4" />
@@ -267,7 +334,7 @@ export default function ProfilePage() {
                   Qo&apos;ng&apos;iroqlar
                 </span>
                 <span className="text-2xl font-black text-[#002f34] block mt-1">
-                  {profile.stats.calls}
+                  {USER_PROFILE.stats.calls}
                 </span>
                 <span className="text-[10px] text-gray-400">ta aloqa</span>
               </div>
@@ -283,7 +350,7 @@ export default function ProfilePage() {
                   Sotuvlar
                 </span>
                 <span className="text-2xl font-black text-[#002f34] block mt-1">
-                  {profile.stats.sales}
+                  {USER_PROFILE.stats.sales}
                 </span>
                 <span className="text-[10px] text-gray-400">muvaffaqiyatli</span>
               </div>
@@ -304,7 +371,7 @@ export default function ProfilePage() {
                     : "bg-[#f2f4f5] text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                Barchasi ({profile.ads.length})
+                Barchasi ({USER_PROFILE.ads.length})
               </button>
               <button
                 onClick={() => setActiveTab("active")}
@@ -314,7 +381,7 @@ export default function ProfilePage() {
                     : "bg-[#f2f4f5] text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                Faol ({profile.tabsCounts.active})
+                Faol ({USER_PROFILE.tabsCounts.active})
               </button>
               <button
                 onClick={() => setActiveTab("pending")}
@@ -324,7 +391,7 @@ export default function ProfilePage() {
                     : "bg-[#f2f4f5] text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                Kutilmoqda ({profile.tabsCounts.pending})
+                Kutilmoqda ({USER_PROFILE.tabsCounts.pending})
               </button>
               <button
                 onClick={() => setActiveTab("rejected")}
@@ -334,7 +401,7 @@ export default function ProfilePage() {
                     : "bg-[#f2f4f5] text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                Rad etilgan ({profile.tabsCounts.rejected})
+                Rad etilgan ({USER_PROFILE.tabsCounts.rejected})
               </button>
             </div>
 
@@ -346,7 +413,7 @@ export default function ProfilePage() {
                 placeholder="E'lonlar ichidan izlash..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#f2f4f5] text-xs pl-8 pr-3 py-1.5 rounded-xl outline-none text-[#002f34]"
+                className="w-full bg-[#f2f4f5] text-xs pl-8 pr-3 py-2 rounded-xl outline-none text-[#002f34]"
               />
             </div>
           </div>
@@ -386,7 +453,6 @@ export default function ProfilePage() {
 
                   {/* Details */}
                   <div className="flex-1 min-w-0 space-y-2">
-                    {/* Status header */}
                     <div className="flex items-center gap-2 text-xs font-semibold">
                       <span
                         className={`w-2 h-2 rounded-full ${
@@ -410,7 +476,6 @@ export default function ProfilePage() {
                       </span>
                     </div>
 
-                    {/* Title */}
                     <Link
                       href="/product/macbook-pro-16"
                       className="text-sm sm:text-base font-bold text-[#002f34] hover:text-[#008f87] transition-colors block line-clamp-2"
@@ -418,12 +483,10 @@ export default function ProfilePage() {
                       {ad.title}
                     </Link>
 
-                    {/* Price */}
                     <div className="text-base sm:text-lg font-black text-[#002f34]">
                       {ad.price}
                     </div>
 
-                    {/* Meta info */}
                     <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 pt-1">
                       <span>📍 {ad.location}</span>
                       {ad.views && <span>👁️ {ad.views} ko&apos;rish</span>}
@@ -450,19 +513,12 @@ export default function ProfilePage() {
                           <span>Tahrirlash</span>
                         </Link>
                         <button
-                          onClick={() => alert("VIP xizmati ochilmoqda...")}
+                          onClick={() => alert("VIP xizmati faollashtirildi!")}
                           className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#ffce32] hover:bg-[#f3c220] text-xs font-bold text-[#002f34] transition-colors w-full shadow-sm"
                         >
                           <Star className="w-3.5 h-3.5 fill-current" />
                           <span>VIP qilish</span>
                         </button>
-                        <Link
-                          href="/product/macbook-pro-16"
-                          className="text-[11px] font-bold text-teal-700 hover:underline flex items-center gap-1 mt-1"
-                        >
-                          <span>Statistika</span>
-                          <ChevronRight className="w-3 h-3" />
-                        </Link>
                       </>
                     )}
 
@@ -473,7 +529,7 @@ export default function ProfilePage() {
                           className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-bold text-[#002f34] transition-colors w-full"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span>Ko&apos;rib chiqish</span>
+                          <span>Ko&apos;rish</span>
                         </Link>
                         <Link
                           href="/create"
@@ -504,13 +560,6 @@ export default function ProfilePage() {
                           <Trash2 className="w-3.5 h-3.5" />
                           <span>O&apos;chirish</span>
                         </button>
-                        <a
-                          href="#"
-                          className="text-[11px] font-bold text-gray-500 hover:underline flex items-center gap-1 mt-1"
-                        >
-                          <span>Qoidalar bilan tanishish</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
                       </>
                     )}
                   </div>
@@ -543,28 +592,24 @@ export default function ProfilePage() {
           {/* Pagination */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100">
             <span className="text-xs text-gray-500">
-              Jami 14 ta e&apos;londan 1 - 3 ko&apos;rsatilmoqda
+              Jami {USER_PROFILE.ads.length} ta e&apos;londan 1 - {filteredAds.length} ko&apos;rsatilmoqda
             </span>
 
             <div className="flex items-center gap-1.5">
               <button
-                className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500"
-                aria-label="Oldingi"
+                className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-400"
+                disabled
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button className="w-8 h-8 rounded-full bg-[#002f34] text-white font-bold text-xs flex items-center justify-center shadow-sm">
+              <button className="w-8 h-8 rounded-full bg-[#002f34] text-white font-bold text-xs flex items-center justify-center shadow-xs">
                 1
               </button>
               <button className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs flex items-center justify-center">
                 2
               </button>
-              <button className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs flex items-center justify-center">
-                3
-              </button>
               <button
                 className="w-8 h-8 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500"
-                aria-label="Keyingi"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -572,6 +617,12 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialTab="login"
+      />
     </div>
   );
 }

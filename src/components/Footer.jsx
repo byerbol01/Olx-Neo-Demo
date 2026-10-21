@@ -13,11 +13,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-10 border-b border-[#164043]">
           {/* Brand info */}
           <div className="lg:col-span-2 space-y-4">
-            <Link href="/" className="flex items-center gap-1.5 group inline-flex">
+            <Link href="/" className="inline-flex items-center gap-1.5 group">
               <span className="text-3xl font-black tracking-tight text-white leading-none">
                 olx
               </span>
-              <span className="bg-[#23e5db] text-[#002f34] text-[11px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider">
+              <span className="bg-[#23e5db] text-[#002f34] text-[11px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider group-hover:bg-[#1cd1c7] transition-colors">
                 NEO
               </span>
             </Link>
@@ -70,7 +70,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/catalog" className="hover:text-white transition-colors">
+                <Link href="/create" className="hover:text-white transition-colors">
                   Reklama berish
                 </Link>
               </li>
@@ -86,7 +86,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/catalog" className="hover:text-white transition-colors">
-                  Yangi imkoniyatlar
+                  Trade-In dasturi
                 </Link>
               </li>
             </ul>
@@ -132,22 +132,24 @@ export default function Footer() {
               <h3 className="text-xs font-bold uppercase tracking-wider text-gray-300 mb-3">
                 TIL VA MINTAQA
               </h3>
-              <div className="inline-flex bg-[#123639] p-0.5 rounded-full">
+              <div className="inline-flex bg-[#123639] p-0.5 rounded-full border border-[#1d4d51]">
                 <button
+                  type="button"
                   onClick={() => setCurrentLang("uz")}
-                  className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                  className={`text-xs px-3 py-1 rounded-full font-bold transition-colors ${
                     currentLang === "uz"
-                      ? "bg-[#23e5db] text-[#002f34] font-bold"
+                      ? "bg-[#23e5db] text-[#002f34]"
                       : "text-gray-300 hover:text-white"
                   }`}
                 >
                   O&apos;zbekcha
                 </button>
                 <button
+                  type="button"
                   onClick={() => setCurrentLang("ru")}
-                  className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                  className={`text-xs px-3 py-1 rounded-full font-bold transition-colors ${
                     currentLang === "ru"
-                      ? "bg-[#23e5db] text-[#002f34] font-bold"
+                      ? "bg-[#23e5db] text-[#002f34]"
                       : "text-gray-300 hover:text-white"
                   }`}
                 >
@@ -197,7 +199,7 @@ export default function Footer() {
 
         {/* Bottom copyright bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-400">
-          <p>© 2025 OLX Neo O&apos;zbekiston. Barcha huquqlar himoyalangan.</p>
+          <p>© 2026 OLX Neo O&apos;zbekiston. Barcha huquqlar himoyalangan.</p>
           <div className="flex items-center gap-5">
             <a href="#" className="hover:text-white transition-colors">
               Maxfiylik siyosati

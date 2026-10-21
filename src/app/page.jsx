@@ -11,12 +11,13 @@ import {
   Shirt,
   Baby,
   Armchair,
+  Sparkles,
 } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import TrustBanner from "@/components/TrustBanner";
 import HomeSearch from "@/components/HomeSearch";
 import HomeLatestFeed from "@/components/HomeLatestFeed";
-import { VIP_PRODUCTS, LATEST_PRODUCTS } from "@/data/mockData";
+import { VIP_PRODUCTS, ALL_PRODUCTS } from "@/data/mockData";
 
 export const metadata = {
   title: "Bosh sahifa | O'zbekiston bo'ylab 3 milliondan ortiq e'lonlar",
@@ -26,14 +27,14 @@ export const metadata = {
 
 export default function HomePage() {
   const categoryIcons = [
-    { name: "Avto", icon: Car, href: "/catalog?cat=avto" },
-    { name: "Ko'chmas mulk", icon: Building2, href: "/catalog?cat=re" },
-    { name: "Elektronika", icon: Laptop, href: "/catalog" },
-    { name: "Ish o'rinlari", icon: Briefcase, href: "/catalog?cat=jobs" },
-    { name: "Xizmatlar", icon: Wrench, href: "/catalog?cat=services" },
-    { name: "Moda va stil", icon: Shirt, href: "/catalog?cat=fashion" },
-    { name: "Bolalar dunyosi", icon: Baby, href: "/catalog?cat=kids" },
-    { name: "Uy va bog'", icon: Armchair, href: "/catalog?cat=home" },
+    { name: "Avto", icon: Car, href: "/catalog?cat=avto", count: "128 ming" },
+    { name: "Ko'chmas mulk", icon: Building2, href: "/catalog?cat=re", count: "84 ming" },
+    { name: "Elektronika", icon: Laptop, href: "/catalog", count: "342 ming" },
+    { name: "Ish o'rinlari", icon: Briefcase, href: "/catalog?cat=jobs", count: "42 ming" },
+    { name: "Xizmatlar", icon: Wrench, href: "/catalog?cat=services", count: "65 ming" },
+    { name: "Moda va stil", icon: Shirt, href: "/catalog?cat=fashion", count: "95 ming" },
+    { name: "Bolalar dunyosi", icon: Baby, href: "/catalog?cat=kids", count: "38 ming" },
+    { name: "Uy va bog'", icon: Armchair, href: "/catalog?cat=home", count: "78 ming" },
   ];
 
   const popularSearches = [
@@ -86,24 +87,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. CATEGORIES SECTION (Pure Server HTML) */}
+      {/* 2. CATEGORIES SECTION (Barcha ruknlar) */}
       <section className="max-w-[1360px] mx-auto px-4 sm:px-6">
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black text-[#002f34] tracking-tight">
-              Barcha ruknlar
-            </h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Eng ommabop yo&apos;nalishlar bo&apos;yicha saralangan e&apos;lonlar
-            </p>
-          </div>
-
+        <div className="flex items-center justify-between mb-5 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-black text-[#002f34] tracking-tight">
+            Barcha ruknlar
+          </h2>
           <Link
             href="/catalog"
-            className="flex items-center gap-1 text-xs font-bold text-[#002f34] hover:text-[#008f87] transition-colors"
+            className="flex items-center gap-1 text-xs sm:text-sm font-bold text-[#008f87] hover:underline"
           >
             <span>Barcha 12 ta rukn</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
@@ -114,13 +109,16 @@ export default function HomePage() {
               <Link
                 key={cat.name}
                 href={cat.href}
-                className="group bg-white rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all"
+                className="group flex flex-col items-center p-4 bg-white rounded-2xl border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all text-center"
               >
-                <div className="w-12 h-12 rounded-2xl bg-[#f2f4f5] group-hover:bg-[#e6faf9] flex items-center justify-center text-[#002f34] group-hover:text-[#008f87] transition-colors mb-2.5">
+                <div className="w-12 h-12 rounded-full bg-[#f2f4f5] group-hover:bg-[#23e5db]/20 flex items-center justify-center text-[#002f34] group-hover:text-[#008f87] transition-colors mb-2.5">
                   <Icon className="w-6 h-6 stroke-[1.75]" />
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-[#002f34] group-hover:text-[#008f87] transition-colors">
+                <span className="text-xs font-bold text-[#002f34] group-hover:text-[#008f87] transition-colors">
                   {cat.name}
+                </span>
+                <span className="text-[10px] text-gray-400 mt-0.5">
+                  {cat.count}
                 </span>
               </Link>
             );
@@ -128,45 +126,39 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. VIP E'LONLAR SECTION (Server Rendered) */}
+      {/* 3. VIP E'LONLAR SECTION */}
       <section className="max-w-[1360px] mx-auto px-4 sm:px-6">
-        <div className="flex items-end justify-between mb-5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-[#ffce32] text-[#002f34] flex items-center justify-center shadow-sm">
-              <Star className="w-4 h-4 fill-current" />
-            </div>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-[#002f34] tracking-tight">
-                VIP E&apos;lonlar
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                O&apos;zbekiston bo&apos;yicha eng sara va tekshirilgan takliflar
-              </p>
-            </div>
+        <div className="flex items-center justify-between mb-5 sm:mb-6">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-black text-[#002f34] tracking-tight">
+              VIP E&apos;lonlar
+            </h2>
+            <span className="bg-[#ffce32] text-[#002f34] text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
+              VIP
+            </span>
           </div>
-
           <Link
             href="/catalog"
-            className="flex items-center gap-1 text-xs font-bold text-[#002f34] hover:text-[#008f87] transition-colors"
+            className="flex items-center gap-1 text-xs sm:text-sm font-bold text-[#008f87] hover:underline"
           >
-            <span>VIP e&apos;lon berish</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>Barchasi</span>
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {VIP_PRODUCTS.map((prod) => (
-            <ProductCard key={prod.id} {...prod} />
+            <ProductCard key={prod.id} {...prod} href="/product/macbook-pro-16" />
           ))}
         </div>
       </section>
 
-      {/* 4. YANGI E'LONLAR SECTION (Interactive Filter Feed) */}
+      {/* 4. LATEST ADS SECTION */}
       <section className="max-w-[1360px] mx-auto px-4 sm:px-6">
-        <HomeLatestFeed initialProducts={LATEST_PRODUCTS} />
+        <HomeLatestFeed initialProducts={ALL_PRODUCTS} />
       </section>
 
-      {/* 5. TRUST & STATS BANNER */}
+      {/* 5. TRUST BANNER WITH METRICS */}
       <section className="max-w-[1360px] mx-auto px-4 sm:px-6">
         <TrustBanner />
       </section>
