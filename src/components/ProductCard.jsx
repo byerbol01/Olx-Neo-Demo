@@ -33,7 +33,7 @@ export default function ProductCard({
     ? `${Number(price).toLocaleString("ru-RU").replace(/,/g, " ")} so'm`
     : "Kelishiladi";
 
-  const targetHref = href || `/product/macbook-pro-16`;
+  const targetHref = href || `/product/${id}`;
 
   return (
     <Link

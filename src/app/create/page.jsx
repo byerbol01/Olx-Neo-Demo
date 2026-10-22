@@ -19,7 +19,9 @@ import {
   ShieldCheck,
   Star,
   Check,
+  Loader2,
 } from "lucide-react";
+import { createProduct, uploadImageFile } from "@/lib/api";
 
 export default function CreateAdPage() {
   const router = useRouter();
@@ -27,13 +29,11 @@ export default function CreateAdPage() {
   const [title, setTitle] = useState(
     "Kuchli flagman noutbuk 16 dyuym, 32GB RAM / 1TB SSD"
   );
-  const [category, setCategory] = useState(
-    "Elektronika > Noutbuklar va kompyuterlar"
-  );
+  const [category, setCategory] = useState("Elektronika");
   const [description, setDescription] = useState(
     "Noutbuk ideal holatda, yangi qutisida. Karobka-dokumentlari to'liq, 1 yil rasmiy kafolat bilan beriladi. Batareya quvvati 100%, 12 ta sikl zaryad olgan. Hech qanday tirnalish yoki nuqsoni yo'q. Qolgan savollar bo'yicha telefon orqali bog'lanishingiz mumkin."
   );
-  const [price, setPrice] = useState("58 400 000");
+  const [price, setPrice] = useState("58400000");
   const [isNegotiable, setIsNegotiable] = useState(true);
   const [safeDeal, setSafeDeal] = useState(true);
   const [freeDelivery, setFreeDelivery] = useState(true);
@@ -44,18 +44,30 @@ export default function CreateAdPage() {
   const [phoneNumber, setPhoneNumber] = useState("+998 90 123 45 67");
   const [contactPerson, setContactPerson] = useState("Anvar N.");
   const [selectedPlan, setSelectedPlan] = useState("vip");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [images, setImages] = useState([
-    "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?auto=format&fit=crop&w=400&q=80",
+    "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=800&q=80",
   ]);
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     if (e.target.files && e.target.files[0]) {
-      const newUrl = URL.createObjectURL(e.target.files[0]);
-      if (images.length < 8) {
-        setImages([...images, newUrl]);
+      const file = e.target.files[0];
+      try {
+        setIsUploading(true);
+        // Upload to desktop backend API
+        const uploadedUrl = await uploadImageFile(file);
+        if (uploadedUrl && images.length < 8) {
+          setImages((prev) => [...prev, uploadedUrl]);
+        }
+      } catch (err) {
+        console.warn("Backend yuklashda xatolik, lokal preview qo'llaniladi:", err);
+        const localUrl = URL.createObjectURL(file);
+        setImages((prev) => [...prev, localUrl]);
+      } finally {
+        setIsUploading(false);
       }
     }
   };
@@ -74,10 +86,52 @@ export default function CreateAdPage() {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("E'loningiz muvaffaqiyatli qabul qilindi va moderatsiyaga yuborildi!");
-    router.push("/profile");
+    if (!title || !price) {
+      alert("Iltimos, sarlavha va narxni kiriting!");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const cleanPrice = String(price).replace(/\s/g, "");
+
+      const productPayload = {
+        title,
+        price: Number(cleanPrice) || 0,
+        category: category.split(" > ")[0] || "Elektronika",
+        location,
+        description,
+        images,
+        image: images[0] || "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80",
+        negotiable: isNegotiable,
+        badge: selectedPlan === "vip" ? "VIP" : selectedPlan === "top" ? "TOP" : "YANGI",
+        sellerName: contactPerson,
+        phoneNumber,
+        seller: {
+          name: contactPerson,
+          phone: phoneNumber,
+          avatar: (contactPerson || "FO").slice(0, 2).toUpperCase(),
+          verified: true,
+          rating: 5.0,
+          deals: "1 ta yangi e'lon",
+        },
+      };
+
+      const res = await createProduct(productPayload);
+      alert("✅ E'loningiz Backend bazasiga muvaffaqiyatli saqlandi!");
+
+      if (res?.data?.id) {
+        router.push(`/product/${res.data.id}`);
+      } else {
+        router.push("/");
+      }
+    } catch (err) {
+      alert("E'lon qo'shishda xatolik: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -492,10 +546,20 @@ export default function CreateAdPage() {
           </Link>
           <button
             type="submit"
-            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#ffce32] hover:bg-[#f3c220] active:scale-95 text-[#002f34] font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
+            disabled={isSubmitting || isUploading}
+            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#ffce32] hover:bg-[#f3c220] active:scale-95 text-[#002f34] font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <span>E&apos;lonni joylashtirish</span>
-            <ArrowRight className="w-4 h-4" />
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Backendga saqlanmoqda...</span>
+              </>
+            ) : (
+              <>
+                <span>E&apos;lonni joylashtirish</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
       </form>

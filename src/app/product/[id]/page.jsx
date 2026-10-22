@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ChevronRight,
   Share2,
@@ -11,7 +11,6 @@ import {
   Camera,
   Clock,
   Eye,
-  Bookmark,
   Sliders,
   FileText,
   ShieldCheck,
@@ -26,31 +25,99 @@ import {
   ArrowRight,
   X,
   Navigation,
+  Loader2,
 } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import SafeDealBanner from "@/components/SafeDealBanner";
+import { getProductById, getProducts } from "@/lib/api";
 import { CURRENT_PRODUCT } from "@/data/mockData";
 
 export default function ProductDetailPage() {
   const router = useRouter();
+  const params = useParams();
+  const productId = params?.id || "1";
+
+  const [product, setProduct] = useState(CURRENT_PRODUCT);
+  const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [fullscreenModal, setFullscreenModal] = useState(false);
+  const [similarProducts, setSimilarProducts] = useState([]);
 
-  const product = CURRENT_PRODUCT;
+  // Fetch product from backend
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        setLoading(true);
+        const data = await getProductById(productId);
+        if (data && isMounted) {
+          // Normalize specs and description if needed
+          const normalized = {
+            ...CURRENT_PRODUCT,
+            ...data,
+            images:
+              Array.isArray(data.images) && data.images.length > 0
+                ? data.images
+                : [data.image || CURRENT_PRODUCT.images[0]],
+            specs:
+              Array.isArray(data.specs) && data.specs.length > 0
+                ? data.specs
+                : [
+                    { label: "Holati", value: data.condition || "Yangi" },
+                    { label: "Kategoriya", value: data.category || "Umumiy" },
+                    { label: "Joylashuv", value: data.location || "Toshkent" },
+                  ],
+            description: Array.isArray(data.description)
+              ? data.description
+              : [data.description || "Batafsil ma'lumot berilmagan."],
+            seller: {
+              ...CURRENT_PRODUCT.seller,
+              ...(data.seller || {}),
+              phone: data.seller?.phone || data.phoneNumber || "+998 90 123 45 67",
+              name: data.seller?.name || data.sellerName || "Aziz Rahimov",
+            },
+          };
+          setProduct(normalized);
+        }
+
+        // Similar products
+        const all = await getProducts();
+        if (all && isMounted) {
+          const others = all.filter((p) => String(p.id) !== String(productId)).slice(0, 4);
+          setSimilarProducts(others);
+        }
+      } catch (err) {
+        console.error("Single product yuklashda xatolik:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [productId]);
 
   const handleShare = () => {
-    if (navigator?.share) {
-      navigator.share({
-        title: product.title,
-        url: window.location.href,
-      });
-    } else if (navigator?.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      alert("Havola nusxalandi!");
+    if (typeof window !== "undefined") {
+      if (navigator?.share) {
+        navigator.share({
+          title: product.title,
+          url: window.location.href,
+        });
+      } else if (navigator?.clipboard) {
+        navigator.clipboard.writeText(window.location.href);
+        alert("Havola nusxalandi!");
+      }
     }
   };
+
+  const imagesList = product.images && product.images.length > 0
+    ? product.images
+    : [product.image || "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=85"];
 
   return (
     <div className="max-w-[1360px] mx-auto px-4 sm:px-6 py-5 sm:py-7 space-y-6">
@@ -62,11 +129,7 @@ export default function ProductDetailPage() {
           </Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <Link href="/catalog" className="hover:text-[#002f34] transition-colors">
-            Elektronika
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <Link href="/catalog" className="hover:text-[#002f34] transition-colors">
-            Noutbuklar
+            {product.category || "Katalog"}
           </Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="font-semibold text-[#002f34] truncate max-w-[200px] sm:max-w-none">
@@ -75,7 +138,7 @@ export default function ProductDetailPage() {
         </nav>
 
         <div className="flex items-center gap-3 shrink-0">
-          <span className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md font-mono text-[11px]">
+          <span className="bg-[#23e5db]/20 text-[#008f87] px-2.5 py-1 rounded-md font-mono text-[11px] font-bold">
             ID: {product.id}
           </span>
           <button
@@ -88,16 +151,23 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
+      {loading && (
+        <div className="py-6 flex items-center justify-center gap-2 text-xs font-semibold text-[#008f87]">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Backend ma&apos;lumotlari yangilanmoqda...</span>
+        </div>
+      )}
+
       {/* 2. Main 2-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* ================= LEFT COLUMN (Gallery + Specs + Desc + Map + Similar) ================= */}
+        {/* ================= LEFT COLUMN ================= */}
         <div className="lg:col-span-8 space-y-6">
           {/* A. Gallery */}
           <div className="bg-white rounded-3xl border border-gray-200/80 p-4 sm:p-5 shadow-sm space-y-3">
             {/* Main large photo */}
             <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-gray-900 group">
               <img
-                src={product.images[selectedImageIndex]}
+                src={imagesList[selectedImageIndex] || imagesList[0]}
                 alt={product.title}
                 className="w-full h-full object-cover transition-all duration-300"
               />
@@ -106,12 +176,13 @@ export default function ProductDetailPage() {
               <div className="absolute top-3.5 left-3.5 flex items-center gap-2 z-10">
                 <span className="flex items-center gap-1 bg-[#23e5db] text-[#002f34] text-xs font-black uppercase px-2.5 py-1 rounded-lg shadow-sm">
                   <CheckCircle className="w-3 h-3" />
-                  {product.statusBadge}
+                  {product.badge || "YANGI"}
                 </span>
-                <span className="flex items-center gap-1 bg-[#ffce32] text-[#002f34] text-xs font-black uppercase px-2.5 py-1 rounded-lg shadow-sm">
-                  <CheckCircle className="w-3 h-3" />
-                  {product.warrantyText}
-                </span>
+                {product.negotiable && (
+                  <span className="flex items-center gap-1 bg-[#ffce32] text-[#002f34] text-xs font-black uppercase px-2.5 py-1 rounded-lg shadow-sm">
+                    Kelishiladi
+                  </span>
+                )}
               </div>
 
               {/* Action buttons top-right */}
@@ -140,67 +211,80 @@ export default function ProductDetailPage() {
               <div className="absolute bottom-3.5 left-3.5 bg-black/60 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium">
                 <Camera className="w-3.5 h-3.5" />
                 <span>
-                  {selectedImageIndex + 1} / {product.images.length} fotosurat
+                  {selectedImageIndex + 1} / {imagesList.length} fotosurat
                 </span>
               </div>
             </div>
 
             {/* Thumbnails row */}
-            <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
-              {product.images.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImageIndex(idx)}
-                  className={`aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all relative ${
-                    selectedImageIndex === idx
-                      ? "border-[#23e5db] ring-2 ring-[#23e5db]/30 scale-[1.02]"
-                      : "border-transparent opacity-70 hover:opacity-100"
-                  }`}
-                >
-                  <img
-                    src={img}
-                    alt={`Preview ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
+            {imagesList.length > 1 && (
+              <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
+                {imagesList.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedImageIndex(idx)}
+                    className={`relative aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all ${
+                      selectedImageIndex === idx
+                        ? "border-[#23e5db] ring-2 ring-[#23e5db]/30 shadow-xs"
+                        : "border-gray-200 hover:border-gray-300 opacity-80 hover:opacity-100"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`Rasm ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* B. Title & Quick Specs */}
-          <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-7 shadow-sm space-y-5">
-            {/* Metadata row */}
-            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 pb-1 border-b border-gray-100">
+          {/* B. Title & Meta banner */}
+          <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-7 shadow-sm space-y-4">
+            <div className="space-y-1.5">
+              <span className="text-xs font-semibold text-gray-400">
+                {product.category || "Umumiy"}
+              </span>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#002f34] tracking-tight leading-snug">
+                {product.title}
+              </h1>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 pt-2 border-t border-gray-100">
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-gray-400" />
-                {product.postedAt}
+                {product.date || "Bugun"}
               </span>
               <span className="flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5 text-gray-400" />
-                {product.views} marta ko&apos;rildi
+                {product.views || 1} ko&apos;rishlar
               </span>
-              <span className="flex items-center gap-1.5 text-teal-700 font-medium">
-                <Bookmark className="w-3.5 h-3.5 text-[#008f87]" />
-                {product.favorites} sevimlilar
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                {product.location || "Toshkent shahri"}
               </span>
             </div>
+          </div>
 
-            {/* Main title */}
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#002f34] leading-snug">
-              {product.title}
-            </h1>
+          {/* C. Specs Grid */}
+          <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-7 shadow-sm space-y-5">
+            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+              <Sliders className="w-4 h-4 text-[#002f34]" />
+              <h2 className="text-base font-black text-[#002f34]">
+                Xususiyatlari va parametrlari
+              </h2>
+            </div>
 
-            {/* Quick Specs Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-              {product.quickSpecs.map((item) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {product.specs?.map((item, index) => (
                 <div
-                  key={item.label}
-                  className="bg-[#f2f4f5] rounded-2xl p-3.5 sm:p-4 border border-gray-100"
+                  key={index}
+                  className="flex items-center justify-between text-xs sm:text-sm p-3 rounded-xl bg-gray-50/70 border border-gray-100"
                 >
-                  <span className="text-[11px] text-gray-500 block">
-                    {item.label}
-                  </span>
-                  <span className="text-sm sm:text-base font-bold text-[#002f34] block mt-1">
+                  <span className="text-gray-500 font-medium">{item.label}</span>
+                  <span className="font-bold text-[#002f34] text-right">
                     {item.value}
                   </span>
                 </div>
@@ -208,51 +292,7 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* C. Specifications Table */}
-          <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-7 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-[#002f34]" />
-                <h2 className="text-base font-black text-[#002f34]">
-                  Xususiyatlari
-                </h2>
-              </div>
-              <span className="text-xs text-gray-400 font-medium">
-                Batafsil ma&apos;lumot
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-              {product.specs.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between p-3 rounded-xl bg-[#f8fafc] border border-gray-100 text-xs"
-                >
-                  <span className="text-gray-500">{item.label}</span>
-                  {item.isBadge ? (
-                    <span className="flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                      <CheckCircle className="w-3 h-3 text-emerald-500" />
-                      {item.value}
-                    </span>
-                  ) : item.colorDot ? (
-                    <span className="flex items-center gap-1.5 font-bold text-[#002f34]">
-                      <span
-                        className="w-3 h-3 rounded-full border border-gray-300"
-                        style={{ backgroundColor: item.colorDot }}
-                      ></span>
-                      {item.value}
-                    </span>
-                  ) : (
-                    <span className="font-bold text-[#002f34] text-right">
-                      {item.value}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* D. Description & Terms */}
+          {/* D. Description */}
           <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-7 shadow-sm space-y-5">
             <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
               <FileText className="w-4 h-4 text-[#002f34]" />
@@ -262,28 +302,11 @@ export default function ProductDetailPage() {
             </div>
 
             <div className="space-y-3.5 text-xs sm:text-sm text-gray-700 leading-relaxed">
-              {product.description.map((p, i) => (
+              {product.description?.map((p, i) => (
                 <p key={i}>{p}</p>
               ))}
 
-              {/* Warranty Banner inside description */}
-              <div className="bg-[#fff9e6] border border-[#ffce32]/40 rounded-2xl p-4 sm:p-5 space-y-1.5 my-4">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#7a5200]">
-                  <ShieldCheck className="w-4 h-4 text-[#ffce32]" />
-                  <span>{product.warrantyBox.title}</span>
-                </div>
-                <p className="text-xs text-gray-700">
-                  {product.warrantyBox.text}
-                </p>
-              </div>
-
-              {/* Delivery Box */}
-              <p className="font-medium text-[#002f34] pt-2">
-                {product.deliveryBox}
-              </p>
-
-              {/* 3 feature badges */}
-              <div className="flex flex-wrap items-center gap-3 pt-3">
+              <div className="flex flex-wrap items-center gap-3 pt-4">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                   <Truck className="w-3.5 h-3.5 text-[#23e5db]" />
                   <span>O&apos;zbekiston bo&apos;ylab yetkazish</span>
@@ -292,119 +315,63 @@ export default function ProductDetailPage() {
                   <ShieldCheck className="w-3.5 h-3.5 text-[#008f87]" />
                   <span>Xavfsiz to&apos;lov tizimi</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                  <RotateCw className="w-3.5 h-3.5 text-gray-400" />
-                  <span>Obmen/Barter ko&apos;rib chiqilmaydi</span>
-                </div>
               </div>
             </div>
           </div>
 
-          {/* E. Safe deal banner */}
-          <SafeDealBanner />
-
-          {/* F. Location on Map Block */}
-          <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-7 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#002f34]" />
-                <h2 className="text-base font-black text-[#002f34]">
-                  Xaritada joylashuvi
-                </h2>
-              </div>
-              <span className="text-xs text-teal-700 font-bold hover:underline cursor-pointer flex items-center gap-1">
-                <Navigation className="w-3 h-3" />
-                <span>Yo&apos;nalishni ko&apos;rish</span>
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          {/* E. Similar Offers */}
+          {similarProducts.length > 0 && (
+            <div className="space-y-4 pt-2">
+              <div className="flex items-end justify-between">
                 <div>
-                  <strong className="text-gray-800 text-sm block">
-                    {product.location.district}
-                  </strong>
-                  <span className="text-gray-500">{product.location.city} • {product.location.metro}</span>
+                  <h2 className="text-lg sm:text-xl font-black text-[#002f34] tracking-tight">
+                    Boshqa tavsiya etilgan takliflar
+                  </h2>
+                  <p className="text-xs text-gray-500">
+                    O&apos;xshash narxdagi sifatli e&apos;lonlar
+                  </p>
                 </div>
-                <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full text-xs font-semibold w-fit">
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  {product.location.courier}
-                </span>
+                <Link
+                  href="/catalog"
+                  className="flex items-center gap-1 text-xs font-bold text-[#002f34] hover:text-[#008f87] transition-colors"
+                >
+                  <span>Barchasini ko&apos;rish</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
 
-              {/* Stylized Map View Box */}
-              <div className="relative h-48 w-full rounded-2xl overflow-hidden bg-slate-100 border border-gray-200 flex items-center justify-center">
-                <div
-                  className="absolute inset-0 opacity-40 bg-cover bg-center"
-                  style={{
-                    backgroundImage: "url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1000&q=80')",
-                  }}
-                ></div>
-                <div className="relative z-10 flex flex-col items-center gap-2 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-gray-200 max-w-sm text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#002f34] text-[#23e5db] flex items-center justify-center shadow-md animate-bounce">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-[#002f34]">Yunusobod 11-mavze</h4>
-                    <p className="text-[11px] text-gray-500">Megaplanet savdo majmuasi yaqinida</p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                {similarProducts.map((item) => (
+                  <ProductCard
+                    key={item.id}
+                    id={item.id}
+                    title={item.title}
+                    priceFormatted={item.priceFormatted}
+                    location={item.location}
+                    date={item.date}
+                    badge={item.badge}
+                    image={item.images?.[0] || item.image}
+                    href={`/product/${item.id}`}
+                  />
+                ))}
               </div>
             </div>
-          </div>
-
-          {/* G. Similar Offers */}
-          <div className="space-y-4 pt-2">
-            <div className="flex items-end justify-between">
-              <div>
-                <h2 className="text-lg sm:text-xl font-black text-[#002f34] tracking-tight">
-                  O&apos;xshash takliflar
-                </h2>
-                <p className="text-xs text-gray-500">
-                  Toshkentdagi boshqa professional noutbuklar
-                </p>
-              </div>
-              <Link
-                href="/catalog"
-                className="flex items-center gap-1 text-xs font-bold text-[#002f34] hover:text-[#008f87] transition-colors"
-              >
-                <span>Barchasini ko&apos;rish</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              {product.similarOffers.map((item) => (
-                <ProductCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title}
-                  priceFormatted={item.price}
-                  location={item.location}
-                  date={item.date}
-                  badge={item.badge}
-                  image={item.image}
-                  href="/product/macbook-pro-16"
-                />
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* ================= RIGHT STICKY SIDEBAR ================= */}
         <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-20">
-          {/* 1. Price & Actions Card */}
+          {/* 1. Price Card */}
           <div className="bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                 NARXI
               </span>
               <span className="bg-teal-50 text-teal-800 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                Narx kelishiladi
+                {product.negotiable ? "Narx kelishiladi" : "Qat'iy narx"}
               </span>
             </div>
 
-            {/* Price values */}
             <div>
               <div className="text-2xl sm:text-3xl font-black text-[#002f34] tracking-tight">
                 {product.priceFormatted}
@@ -416,18 +383,16 @@ export default function ProductDetailPage() {
 
             {/* Action buttons */}
             <div className="space-y-2.5 pt-2">
-              {/* Call button */}
               <button
                 onClick={() => setShowPhone(!showPhone)}
                 className="w-full flex items-center justify-center gap-2 bg-[#ffce32] hover:bg-[#f3c220] active:scale-95 text-[#002f34] font-black text-sm sm:text-base py-3.5 rounded-2xl shadow-sm transition-all"
               >
                 <Phone className="w-5 h-5 stroke-[2.5]" />
                 <span>
-                  {showPhone ? product.seller.phone : "Qo'ng'iroq qilish"}
+                  {showPhone ? product.seller?.phone || "+998 90 123 45 67" : "Telefon raqamini ko'rish"}
                 </span>
               </button>
 
-              {/* Message button */}
               <button
                 onClick={() => router.push("/messages")}
                 className="w-full flex items-center justify-center gap-2 bg-[#23e5db] hover:bg-[#1cd1c7] active:scale-95 text-[#002f34] font-black text-sm sm:text-base py-3.5 rounded-2xl shadow-sm transition-all"
@@ -437,7 +402,6 @@ export default function ProductDetailPage() {
               </button>
             </div>
 
-            {/* Secondary actions */}
             <div className="flex items-center justify-between pt-3 border-t border-gray-100 text-xs text-gray-600">
               <button
                 onClick={() => setIsFavorite(!isFavorite)}
@@ -463,88 +427,39 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-3.5">
               <div className="relative">
                 <div className="w-12 h-12 rounded-2xl bg-[#002f34] text-white flex items-center justify-center text-lg font-black shrink-0">
-                  {product.seller.avatar}
+                  {product.seller?.avatar || "SO"}
                 </div>
-                {product.seller.isOnline && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
-                )}
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
               </div>
 
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="text-base font-black text-[#002f34]">
-                    {product.seller.name}
+                    {product.seller?.name || "Sotuvchi"}
                   </h3>
                   <CheckCircle className="w-4 h-4 text-[#23e5db]" />
                 </div>
                 <div className="text-[11px] text-gray-400">
-                  {product.seller.since}
-                </div>
-                <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span>{product.seller.onlineStatus}</span>
+                  {product.seller?.since || "OLX faol foydalanuvchisi"}
                 </div>
               </div>
             </div>
 
-            {/* OneID verification badge */}
-            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-teal-50 border border-teal-100 text-xs font-semibold text-teal-800">
-              <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0" />
-              <span>{product.seller.oneIdText}</span>
-            </div>
-
-            {/* Stats list */}
-            <div className="space-y-2 text-xs text-gray-600">
-              <div className="flex items-center gap-2">
-                <span>🤝</span>
-                <span>{product.seller.deals}</span>
+            <div className="pt-3 border-t border-gray-100 text-xs text-gray-600 space-y-2">
+              <div className="flex items-center justify-between">
+                <span>Muvaffaqiyatli bitimlar:</span>
+                <span className="font-bold text-[#002f34]">
+                  {product.seller?.deals || "30+ bitim"}
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span>⚡</span>
-                <span>{product.seller.responseTime}</span>
+              <div className="flex items-center justify-between">
+                <span>Reyting:</span>
+                <span className="font-bold text-amber-500">★ 4.9</span>
               </div>
             </div>
-
-            {/* All seller ads button */}
-            <button
-              onClick={() => router.push("/catalog")}
-              className="w-full py-2.5 rounded-2xl border border-gray-200 hover:border-gray-300 text-xs font-bold text-[#002f34] hover:bg-gray-50 transition-colors"
-            >
-              Sotuvchining barcha e&apos;lonlari ({product.seller.totalAds})
-            </button>
-          </div>
-
-          {/* 3. Safety Tips Card */}
-          <div className="bg-[#f8fafc] rounded-3xl border border-gray-200/80 p-5 shadow-sm space-y-2.5 text-xs text-gray-600">
-            <h4 className="font-bold text-[#002f34] flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-teal-600" />
-              <span>Xavfsizlik eslatmasi</span>
-            </h4>
-            <ul className="space-y-1 text-[11px] list-disc list-inside text-gray-500">
-              <li>Hech qachon tovar ko&apos;rilmasdan oldindan pul o&apos;tkazmang.</li>
-              <li>OLX Xavfsiz bitim orqali to&apos;lang — pul kafolatda saqlanadi.</li>
-              <li>Begona chat yoki shubhali havolalarga o&apos;tmang.</li>
-            </ul>
           </div>
         </div>
       </div>
-
-      {/* Fullscreen Photo Modal */}
-      {fullscreenModal && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <button
-            onClick={() => setFullscreenModal(false)}
-            className="absolute top-5 right-5 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <img
-            src={product.images[selectedImageIndex]}
-            alt={product.title}
-            className="max-h-[85vh] max-w-[90vw] object-contain rounded-2xl"
-          />
-        </div>
-      )}
     </div>
   );
 }
